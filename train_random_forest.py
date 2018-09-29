@@ -23,7 +23,7 @@ def main():
     tr_data, val_data, tr_labels, val_labels = split_data(X, y)
     model = train_model(tr_data, tr_labels, args.split_criterion, int(args.num_estimators), oob_score=True)
     performance = model.score(val_data, val_labels)
-    print("Performance score was %.2".format(performance))
+    print("Performance score was {}".format(performance))
     if args.model_path:
         model.save(args.model_path)
 
