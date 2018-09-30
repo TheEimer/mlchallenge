@@ -21,7 +21,7 @@ def main():
     args = parse_arguments()
 
     #Read data
-    _, X, y = read_data(args.data_path)
+    _, X, y, _ = read_data(args.data_path)
     X_train, X_val, y_train, y_val = split_data(X, y)
 
     #Labels need to be encoded for NN

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 
 def fix_dates(dates):
     # For each entry we check the month
@@ -35,21 +36,34 @@ def fix_dates(dates):
 
     return dates
 
-def read_data(path, test=False):
+def read_data(path, test=False, encoder=None):
     # Read dataset into pandas dataframe
     df = pd.read_csv(path, encoding='latin1')
     # We don't need ID and don't want to train on our results
+    #Extract dates for later use
+    #One-hotting them will lead to loads of unnecessary feature
     IDs = df['Unnamed: 0'].values
-    X = df.iloc[:, 1:].drop('Unfallschwere', axis=1)
-    # Result vector
+    dates = df.iloc[:, 2].values
+    data_to_onehot = pd.DataFrame(df, columns=['Strassenklasse', 'Unfallklasse', 'Lichtverhältnisse', 'Bodenbeschaffenheit', 'Geschlecht', 'Fahrzeugtyp', 'Wetterlage']).values
+    non_onehot = pd.DataFrame(df, columns=['Alter', 'Verletzte Personen', 'Zeit (24h)', 'Anzahl Fahrzeuge']).values
     if not test:
+        #One-hot categorical data (except dates)
+        #Requires sklearn 0.20+
+        if not encoder:
+            encoder = OneHotEncoder(categories='auto')
+            one_hotted = encoder.fit_transform(data_to_onehot).todense()
+        else:
+            one_hotted = encoder.transform(data_to_onehot).todense()
+        # Result vector
         y = df['Unfallschwere'].values
     else:
+        #No results in test data
+        one_hotted = encoder.transform(data_to_onehot).todense()
         y = 0
-    # One-hot the data and fix the dates
-    X = pd.get_dummies(X, columns=['Strassenklasse', 'Unfallklasse', 'Lichtverhältnisse', 'Bodenbeschaffenheit', 'Geschlecht', 'Fahrzeugtyp', 'Wetterlage']).values
-    X[:, 0] = fix_dates(X[:, 0])
-    return IDs, X, y
+    #fix the dates
+    dates = fix_dates(dates)[:, None]
+    X = np.concatenate((dates, non_onehot, one_hotted), axis=1)
+    return IDs, X, y, encoder
 
 def split_data(X, y):
     # Split so we have validation data to score our performance

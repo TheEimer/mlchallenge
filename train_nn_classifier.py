@@ -12,8 +12,8 @@ from utils import read_data, split_data
 def train_model(data, labels, epochs, batch_size):
     # Define model: Input layer with 32 neurons, softmax output (1 per class, represents probability of class being correct)
     model = Sequential()
-    model.add(Dense(4, input_dim=data.shape[1], activation='relu'))
-    model.add(Dense(4, activation='relu'))
+    model.add(Dense(16, input_dim=data.shape[1], activation='relu'))
+    model.add(Dense(16, activation='relu'))
     model.add(Dense(3, activation='softmax'))
 
     model.compile(optimizer='rmsprop',
@@ -31,7 +31,7 @@ def parse_arguments():
     parser.add_argument('data_path', help='Path to the training data')
     parser.add_argument('test_data', help='Path to test data file')
     parser.add_argument(
-        '--epochs', help='Number of training epochs', default=500)
+        '--epochs', help='Number of training epochs', default=1000)
     parser.add_argument(
         '--batch_size', help='Batch size for training', default=8)
     parser.add_argument('--model_path', help='Where to save model to.')
@@ -41,9 +41,10 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    _, X, y = read_data(args.data_path)
+    _, X, y, X_encoder = read_data(args.data_path)
     tr_data, val_data, tr_labels, val_labels = split_data(X, y)
-
+    X = tr_data
+    y = tr_labels
     encoder = OneHotEncoder()
     tr_labels = encoder.fit_transform(tr_labels.reshape(-1, 1))
     val_labels = encoder.transform(val_labels.reshape(-1, 1))
@@ -51,9 +52,10 @@ def main():
     model = train_model(tr_data, tr_labels, int(
         args.epochs), int(args.batch_size))
 
-    IDs, X_test, _ = read_data(args.test_data)
+    #We need to one-hot the test data in the same way as the training data, so we need the same encoder
+    IDs, X_test, _, _ = read_data(args.test_data, test=True, encoder=X_encoder)
     pred = model.predict(X_test)
-    pred = encoder.inverse_transform(pred).reshape(15221,)
+    pred = encoder.inverse_transform(pred)
     predictions = pd.DataFrame(data=np.column_stack((IDs, pred)), columns=['Unfall_ID', 'Unfallschwere'])
 
     with open('predictions.txt', 'r+') as f:

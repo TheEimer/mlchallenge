@@ -18,7 +18,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    _, X, y = read_data(args.data_path)
+    _, X, y, _ = read_data(args.data_path)
     tr_data, val_data, tr_labels, val_labels = split_data(X, y)
     model = train_model(tr_data, tr_labels, args.kernel)
     performance = model.score(val_data, val_labels)
